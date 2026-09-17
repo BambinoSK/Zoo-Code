@@ -1501,6 +1501,25 @@ describe("OpenAiHandler", () => {
 				{ path: "/models/chat/completions" },
 			)
 		})
+
+		it("should exclude stream_options when O3 model uses Grok xAI base URL", async () => {
+			const handler = new OpenAiHandler({ ...o3Options, openAiBaseUrl: "https://api.x.ai/v1" })
+			const stream = handler.createMessage("You are a helpful assistant.", [{ role: "user", content: "Hello!" }])
+			await stream.next()
+
+			const lastCall = mockCreate.mock.calls[mockCreate.mock.calls.length - 1]
+			expect(lastCall[0]).not.toHaveProperty("stream_options")
+		})
+
+		it("should include stream_options when O3 model uses non-Grok URL containing 'x.ai' substring", async () => {
+			const handler = new OpenAiHandler({ ...o3Options, openAiBaseUrl: "https://box.ai/v1" })
+			const stream = handler.createMessage("You are a helpful assistant.", [{ role: "user", content: "Hello!" }])
+			await stream.next()
+
+			const lastCall = mockCreate.mock.calls[mockCreate.mock.calls.length - 1]
+			expect(lastCall[0]).toHaveProperty("stream_options")
+			expect(lastCall[0].stream_options).toEqual({ include_usage: true })
+		})
 	})
 })
 
